@@ -1,0 +1,3 @@
+[packages]
+rtx = "./examples/rtx"
+starship = "./examples/starship"

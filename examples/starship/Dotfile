@@ -1,0 +1,20 @@
+[dependencies]
+rtx = "../rtx"
+
+[env]
+TEST_EXAMPLE = "1"
+
+[lines]
+# https://starship.rs/guide/#step-2-setup-your-shell-to-use-starship
+"~/.bashrc" = 'eval "$(starship init bash)"'
+
+[links]
+# https://starship.rs/config/
+"config.toml" = "~/.config/starship/config.toml"
+
+[settings]
+remove-empty-dir = true
+verbose = true
+
+[tools]
+starship = "latest"

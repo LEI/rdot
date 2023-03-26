@@ -1,0 +1,7 @@
+[lines]
+# https://github.com/jdxcode/rtx#quickstart
+"~/.bashrc" = 'eval "$(rtx activate bash)"'
+
+[links]
+# https://github.com/jdxcode/rtx#configuration
+"config.toml" = "~/.config/rtx/config.toml"

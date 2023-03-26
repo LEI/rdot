@@ -1,0 +1,3 @@
+# https://github.com/jdxcode/rtx#global-config-configrtxconfigtoml
+[settings]
+trusted_config_paths = ['~/src']
