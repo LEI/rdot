@@ -113,8 +113,12 @@ impl Link {
                     create_dir(parent_dir).wrap_err("failed to create dir")?;
                 }
 
-                // TODO: windows
-                os::unix::fs::symlink(source, target).wrap_err("failed to symlink")
+                #[cfg(target_os = "windows")]
+                os::windows::fs::symlink_file(source, target).wrap_err("failed to symlink")?;
+                #[cfg(not(target_os = "windows"))]
+                os::unix::fs::symlink(source, target).wrap_err("failed to symlink")?;
+
+                Ok(())
             }
             Action::Remove => {
                 let result = if target.exists() {
