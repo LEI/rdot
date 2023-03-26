@@ -3,10 +3,17 @@ use std::path::PathBuf;
 
 use color_eyre::Result;
 
-use crate::config::package::PackageConfig;
-use crate::line::Line;
-use crate::link::Link;
+use crate::package::config::SystemPackage;
+use crate::package::line::Line;
+use crate::package::link::Link;
 use crate::rtx::Rtx;
+use crate::system::System;
+
+use self::config::PackageConfig;
+
+pub mod config;
+pub(crate) mod line;
+pub(crate) mod link;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Action {
@@ -54,63 +61,73 @@ impl Package {
         action: Action,
         config: PackageConfig,
         dry_run: bool,
+        verbose: u8,
     ) -> Result<()> {
         println!("--- {:?} package: {}", action, self.name);
 
-        let package_settings = config.settings.unwrap_or_default();
-        if config.settings.is_some() && package_settings.verbose {
-            println!("Package settings (verbose): {:#?}", package_settings);
+        let package_settings = config.settings;
+        if verbose > 0 {
+            println!("Package settings: {:#?}", package_settings);
         }
 
-        if let Some(dependencies) = &config.dependencies {
-            for dep in dependencies {
-                println!("# TODO: import {} from {}", dep.0, dep.1);
-            }
+        for dep in &config.dependencies {
+            println!("# TODO: import {} from {}", dep.0, dep.1);
         }
 
         // println!("Env: {:?}", config.env);
-        if let Some(env) = &config.env {
-            for var in env {
-                println!("# TODO: export {}={}", var.0, var.1);
-            }
+        for var in &config.env {
+            println!("# TODO: export {}={}", var.0, var.1);
         }
 
         // println!("Lines: {:?}", config.lines);
-        if let Some(lines) = &config.lines {
-            for value in lines {
-                let line: Line = value.into();
+        for value in &config.lines {
+            let line: Line = value.into();
 
-                line.execute(action, self.path.to_path_buf(), dry_run)?;
-            }
+            line.execute(action, self.path.to_path_buf(), dry_run)?;
         }
 
         // println!("Links: {:?}", config.links);
-        if let Some(links) = &config.links {
-            for value in links {
-                let link: Link = value.into();
+        for value in &config.links {
+            let link: Link = value.into();
 
-                link.execute(action, self.path.to_path_buf(), dry_run, package_settings)
-                    .expect("failed to link")
+            link.execute(action, self.path.to_path_buf(), dry_run, package_settings)?;
+        }
+
+        for pkg in &config.system {
+            let sp = SystemPackage::from(pkg.1);
+            let pkg = format!("{}@{:?}", pkg.0, sp.version);
+            let system = System::default();
+
+            println!("system {} {}", action, pkg);
+            match action {
+                Action::Install => {
+                    if !dry_run {
+                        system.install(&pkg);
+                    }
+                }
+                Action::Remove => {
+                    if !dry_run && !sp.keep {
+                        system.remove(&pkg);
+                    }
+                }
             }
         }
 
         // println!("Tools: {:?}", config.tools);
-        if let Some(tools) = &config.tools {
-            for tool in tools {
-                let tool = format!("{}@{}", tool.0, tool.1);
-                let rtx = Rtx::new();
+        for tool in &config.tools {
+            let tool = format!("{}@{}", tool.0, tool.1);
+            let rtx = Rtx::default();
 
-                println!("rtx {} {}", action, tool);
-                match action {
-                    Action::Install => {
-                        if !dry_run {
-                            rtx.install(&tool);
-                        }
+            println!("rtx {} {}", action, tool);
+            match action {
+                Action::Install => {
+                    if !dry_run {
+                        rtx.install(&tool);
                     }
-                    Action::Remove => {
-                        if !dry_run {
-                            rtx.remove(&tool);
-                        }
+                }
+                Action::Remove => {
+                    if !dry_run {
+                        rtx.remove(&tool);
                     }
                 }
             }

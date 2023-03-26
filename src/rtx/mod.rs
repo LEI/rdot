@@ -1,12 +1,9 @@
 use std::process::{Command, Output};
 
+#[derive(Default)]
 pub struct Rtx {}
 
 impl Rtx {
-    pub fn new() -> Self {
-        Self {}
-    }
-
     // TODO: stdout and stderr handling
     // https://docs.rs/color-eyre/latest/color_eyre/#custom-sections-for-error-reports-via-section-trait
 

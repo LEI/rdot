@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use lazy_static::lazy_static;
 
-use crate::env;
+use crate::core::env;
 
 lazy_static! {
     pub static ref CURRENT: PathBuf = env::PWD.clone();

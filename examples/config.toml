@@ -1,3 +1,4 @@
 [packages]
-rtx = "./examples/rtx"
-starship = "./examples/starship"
+git = "./git"
+rtx = "./rtx"
+starship = "./starship"

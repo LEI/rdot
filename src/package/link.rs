@@ -10,7 +10,7 @@ use color_eyre::{
     Result,
 };
 
-use crate::{config::package::PackageSettings, dirs, package::Action};
+use crate::{core::dirs, package::config::PackageSettings, package::Action};
 
 pub struct Link {
     /// The path to the source file

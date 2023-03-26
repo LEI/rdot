@@ -1,0 +1,9 @@
+# [links]
+# ".gitconfig" = "~/.gitconfig"
+# ".gitignore" = "~/.gitignore"
+
+[system]
+git = { keep = true }
+ghq = "latest"
+git-absorb = "latest"
+git-extras = "latest"

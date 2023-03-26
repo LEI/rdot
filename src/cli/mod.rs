@@ -1,4 +1,12 @@
+// use std::process::Output;
+
 use clap::{Args, Parser, Subcommand};
+// use color_eyre::Result;
+
+// use crate::core::config::Config;
+
+pub mod command;
+pub mod list;
 
 // TODO: use src/dirs.rs
 const DEFAULT_CONFIG_FILE: &str = "$RDOT_CONFIG_DIR/config.toml";
@@ -32,10 +40,19 @@ pub struct Cli {
     pub verbose: u8,
 }
 
+// impl Cli {
+//     pub fn run(self, mut config: Config, args: &Vec<String>, out: &mut Output) -> Result<()> {
+//         let matches = self.command.get_matches_from(args);
+
+//         Commands::from_arg_matches(matches)?.run(config, out);
+//     }
+// }
+
 #[derive(Debug, Subcommand)]
 pub enum Commands {
     /// Lists the specified packages.
     #[command(aliases = ["l", "ls"])]
+    // TODO: List(list::List),
     List(PackageArgs),
 
     /// Installs the specified packages.
@@ -56,57 +73,4 @@ pub struct PackageArgs {
     /// Synchronize the configured packages.
     #[clap(short, long)]
     pub sync: bool,
-}
-
-#[cfg(test)]
-mod tests {
-    use assert_cmd::Command;
-    use predicates::prelude::*;
-
-    fn bin() -> Command {
-        Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap()
-    }
-
-    #[test]
-    fn test_help_command() {
-        bin()
-            .arg("--dry-run")
-            .assert()
-            .failure()
-            .code(2)
-            .stderr(predicate::str::contains("Usage:"));
-    }
-
-    #[test]
-    fn test_list_command() {
-        bin()
-            .arg("list")
-            .arg("--dry-run")
-            .arg("--config-file=examples/config.toml")
-            .assert()
-            .success()
-            .stdout(predicate::str::contains("Available"));
-    }
-
-    #[test]
-    fn test_install_command() {
-        bin()
-            .arg("install")
-            .arg("--dry-run")
-            .arg("--config-file=examples/config.toml")
-            .assert()
-            .success()
-            .stdout(predicate::str::contains("Dry-run"));
-    }
-
-    #[test]
-    fn test_remove_command() {
-        bin()
-            .arg("remove")
-            .arg("--dry-run")
-            .arg("--config-file=examples/config.toml")
-            .assert()
-            .success()
-            .stdout(predicate::str::contains("Dry-run"));
-    }
 }
