@@ -11,7 +11,7 @@ lazy_static! {
     pub static ref ROOT: PathBuf = env::RDOT_DATA_DIR.clone();
     pub static ref CACHE: PathBuf = env::RDOT_CACHE_DIR.clone();
     pub static ref CONFIG: PathBuf = env::RDOT_CONFIG_DIR.clone();
-    pub static ref PACKAGES: PathBuf = env::RDOT_DATA_DIR.join("packages");
+    pub static ref ROLES: PathBuf = env::RDOT_DATA_DIR.join("roles");
     // pub static ref DOWNLOADS: PathBuf = env::RDOT_DATA_DIR.join("downloads");
     // pub static ref INSTALLS: PathBuf = env::RDOT_DATA_DIR.join("installs");
 }

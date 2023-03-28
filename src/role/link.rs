@@ -10,7 +10,9 @@ use color_eyre::{
     Result,
 };
 
-use crate::{core::dirs, package::config::PackageSettings, package::Action};
+use crate::{core::dirs, role::Action};
+
+use super::config::RoleSettings;
 
 pub struct Link {
     /// The path to the source file
@@ -26,7 +28,7 @@ impl Link {
         action: Action,
         directory: PathBuf,
         dry_run: bool,
-        settings: PackageSettings,
+        settings: RoleSettings,
     ) -> Result<()> {
         let source = if self.original.is_relative() {
             directory.join(&self.original)

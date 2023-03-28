@@ -2,7 +2,7 @@ use std::{fmt::Display, fs::read_to_string, path::PathBuf};
 
 use color_eyre::{eyre::eyre, Result};
 
-use crate::{core::dirs, package::Action};
+use crate::{core::dirs, role::Action};
 
 pub struct Line {
     /// The path to the target file

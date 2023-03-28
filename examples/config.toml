@@ -1,4 +1,8 @@
-[packages]
+[roles]
 git = "./git"
-rtx = "./rtx"
+guix = { oss = "lol", os = ["linux"], path = "./guix" }
+rtx = { os = ["darwin", "linux"], path = "./rtx" }
 starship = "./starship"
+
+# [linux]
+# guix = "./guix"
