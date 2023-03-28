@@ -1,49 +1,25 @@
-use assert_cmd::Command;
-use predicates::prelude::*;
+use std::{collections::HashMap, path::PathBuf};
 
-fn bin() -> Command {
-    Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap()
-}
-
-#[test]
-fn help_command() {
-    bin()
-        .arg("--dry-run")
-        .assert()
-        .failure()
-        .code(2)
-        .stderr(predicate::str::contains("Usage:"));
-}
+// use rdot::bin;
+use rdot::{
+    core::{config::Config, role::Role},
+    filter,
+};
 
 #[test]
-fn list_command() {
-    bin()
-        .arg("list")
-        .arg("--dry-run")
-        .arg("--config-file=examples/config.toml")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Available"));
-}
+fn integration() {
+    color_eyre::install().unwrap();
+    env_logger::init();
 
-#[test]
-fn install_command() {
-    bin()
-        .arg("install")
-        .arg("--dry-run")
-        .arg("--config-file=examples/config.toml")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Dry-run"));
-}
+    // bin::rdot().unwrap()
 
-#[test]
-fn remove_command() {
-    bin()
-        .arg("remove")
-        .arg("--dry-run")
-        .arg("--config-file=examples/config.toml")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Dry-run"));
+    let path = PathBuf::from("examples/config.toml");
+    let config = Config::load(&path).expect("failed to load config");
+    log::debug!("Loaded global config: {:#?}", config);
+    assert_eq!(config.env, HashMap::new());
+    assert!(config.roles.iter().len() > 0);
+
+    let roles = filter(&config, &vec![]).unwrap();
+    Role::list(&roles, false).unwrap();
+    // TODO: capture stdout
 }

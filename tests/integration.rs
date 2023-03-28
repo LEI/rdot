@@ -1,35 +1,49 @@
-// use std::path::PathBuf;
+use assert_cmd::Command;
+use predicates::prelude::*;
 
-// use core;
-
-use std::{collections::HashMap, path::PathBuf};
-
-use rdot::{cli::PackageArgs, core::config::Config, filter, package::Package};
+fn bin() -> Command {
+    Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap()
+}
 
 #[test]
-fn integration() {
-    env_logger::init();
-    let path = PathBuf::from("examples/config.toml");
-    let config = Config::load(&path).expect("failed to load config");
-    log::debug!("Loaded global config: {:#?}", config);
-    assert_eq!(config.env, HashMap::new());
-    assert_eq!(
-        config.packages,
-        HashMap::from([
-            ("git".to_string(), "./git".to_string()),
-            ("rtx".to_string(), "./rtx".to_string()),
-            ("starship".to_string(), "./starship".to_string()),
-        ])
-    );
+fn help_command() {
+    bin()
+        .arg("--dry-run")
+        .assert()
+        .failure()
+        .code(2)
+        .stderr(predicate::str::contains("Usage:"));
+}
 
-    let packages = filter(
-        &config,
-        &PackageArgs {
-            filter: vec![],
-            sync: false,
-        },
-    )
-    .unwrap();
-    Package::list(&packages, false).unwrap();
-    // TODO: capture stdout
+#[test]
+fn list_command() {
+    bin()
+        .arg("list")
+        .arg("--dry-run")
+        .arg("--config-file=examples/config.toml")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Available"));
+}
+
+#[test]
+fn install_command() {
+    bin()
+        .arg("install")
+        .arg("--dry-run")
+        .arg("--config-file=examples/config.toml")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Dry-run"));
+}
+
+#[test]
+fn remove_command() {
+    bin()
+        .arg("remove")
+        .arg("--dry-run")
+        .arg("--config-file=examples/config.toml")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Dry-run"));
 }

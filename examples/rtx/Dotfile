@@ -1,3 +1,5 @@
+os = ["darwin", "linux"]
+
 [lines]
 # https://github.com/jdxcode/rtx#quickstart
 "~/.bashrc" = 'eval "$(rtx activate bash)"'
