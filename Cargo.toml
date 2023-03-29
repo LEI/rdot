@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.0", features = ["cargo", "derive", "env", "string"] }
-color-eyre = "0.5"
+color-eyre = "0.6"
 console = "0.15.5"
 dialoguer = "0.10.3"
 dirs-next = "2.0.0"
