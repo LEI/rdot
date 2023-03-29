@@ -1,10 +1,10 @@
 use std::process::{Command, Output};
 
 #[derive(Default)]
-pub struct System {}
+pub(crate) struct System {}
 
 impl System {
-    pub fn install(&self, pkg: &str) -> Output {
+    pub(crate) fn install(&self, pkg: &str) -> Output {
         self.manager()
             .arg("install")
             .arg(pkg)
@@ -12,7 +12,7 @@ impl System {
             .expect("failed to execute system install")
     }
 
-    pub fn remove(&self, pkg: &str) -> Output {
+    pub(crate) fn remove(&self, pkg: &str) -> Output {
         self.manager()
             .arg("remove")
             .arg(pkg)
@@ -33,7 +33,7 @@ struct PackageManager {
 }
 
 impl PackageManager {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         #[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
         let name = "apt-get"; // FIXME: detect distrib
         #[cfg(target_os = "macos")]

@@ -1,22 +1,25 @@
-// use std::process::Output;
+use std::{
+    fs,
+    io::StdoutLock,
+    path::{Path, PathBuf},
+};
 
-use std::{fs, io, path::Path};
-
-use clap::{Args, Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand};
 use color_eyre::{
     eyre::{Context, Result},
     Report,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    cli::command::Command,
-    core::{config::Config, role::Role},
-    filter,
-    role::{config::RoleConfig, Action},
+    config::{load_toml, Config},
+    role::action::{Action, Role},
 };
 
-pub mod command;
-pub mod list;
+use self::commands::{install, list, remove, Command};
+
+pub mod commands;
+pub(crate) mod output;
 
 // TODO: use src/dirs.rs
 const DEFAULT_CONFIG_FILE: &str = "$RDOT_CONFIG_DIR/config.toml";
@@ -26,8 +29,14 @@ const DEFAULT_CONFIG_FILE: &str = "$RDOT_CONFIG_DIR/config.toml";
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: Commands,
+    pub(crate) command: Commands,
 
+    #[clap(flatten)]
+    global_options: GlobalOptions,
+}
+
+#[derive(Clone, Debug, Default, Parser, Serialize, Deserialize)]
+pub struct GlobalOptions {
     /// The path to the global configuration file.
     #[arg(
         short,
@@ -35,83 +44,59 @@ pub struct Cli {
         default_value = DEFAULT_CONFIG_FILE,
         global = true
     )]
-    pub config_file: std::path::PathBuf,
+    pub(crate) config_file: PathBuf,
 
     /// The name of the roles configuration file.
-    #[arg(short = 'C', long, default_value = "Dotfile", global = true)]
-    pub role_config_name: std::path::PathBuf,
+    #[arg(
+        short = 'C',
+        long = "config-name",
+        default_value = "Dotfile",
+        global = true
+    )]
+    // pub(crate) config_name: PathBuf,
+    pub role_config_name: PathBuf,
 
     /// Runs without applying changes.
     #[arg(short, long, global = true)]
-    pub dry_run: bool,
+    pub(crate) dry_run: bool,
 
     /// Increases logging verbosity.
-    #[arg(short, long, action = clap::ArgAction::Count, global = true)]
-    pub verbose: u8,
+    #[arg(short, long, action = ArgAction::Count, global = true)]
+    pub(crate) verbose: u8,
 }
 
 impl Cli {
-    //     pub fn run(self, mut config: Config, args: &Vec<String>, out: &mut Output) -> Result<()> {
-    //         let matches = self.command.get_matches_from(args);
+    /// Load global configuration
+    pub fn load_config(&self) -> Result<Config> {
+        let config_file = &self.global_options.config_file;
+        // println!("Loading global config: {:?}", &config_file);
 
-    //         Commands::from_arg_matches(matches)?.run(config, out);
-    //     }
-    pub fn run(self) -> Result<()> {
-        color_eyre::install()?;
-        if self.verbose > 0 {
+        Config::load(config_file)
+            .wrap_err(format!("Failed to load config: {}", config_file.display()))
+    }
+}
+
+// FIXME: impl Command for Cli requires global_options
+impl Cli {
+    pub fn run(self, config: Config, stdout: &mut StdoutLock) -> Result<()> {
+        if self.global_options.verbose > 0 {
             println!("CLI: {:#?}", self);
         }
-        if self.dry_run {
+        let options = self.global_options;
+        if options.dry_run {
             println!("Dry-run");
         }
-
-        // println!("Loading global config: {:?}", config_file);
-        let config = Config::load(&self.config_file).wrap_err(format!(
-            "failed to load config: {}",
-            &self.config_file.display()
-        ))?;
-        if self.verbose > 1 {
+        if options.verbose > 1 {
             println!("Loaded global config: {:#?}", config);
         }
-        let base_dir = self.config_file.parent().unwrap();
 
         // TODO: resolve dependency graph
 
-        // Get the global stdout entity and aquire a lock on it
-        let stdout = io::stdout();
-        let mut output = stdout.lock();
-
-        match &self.command {
-            Commands::List(args) => args.clone().run(config, &mut output)?,
-            Commands::Install(args) => {
-                let mut roles = filter(&config, &args.filter)?;
-                let file_name = &self.role_config_name;
-
-                run_command(
-                    Action::Install,
-                    &mut roles,
-                    base_dir,
-                    file_name,
-                    self.dry_run,
-                    self.verbose,
-                )?
-            }
-            Commands::Remove(args) => {
-                let mut roles = filter(&config, &args.filter)?;
-                let file_name = &self.role_config_name;
-
-                run_command(
-                    Action::Remove,
-                    &mut roles,
-                    base_dir,
-                    file_name,
-                    self.dry_run,
-                    self.verbose,
-                )?
-            }
+        match self.command {
+            Commands::List(list) => list.run(config, options, stdout),
+            Commands::Install(install) => install.run(config, options, stdout),
+            Commands::Remove(remove) => remove.run(config, options, stdout),
         }
-
-        Ok(())
     }
 }
 
@@ -137,7 +122,7 @@ fn run_command(
         let file = role.path.join(file_name);
 
         // println!("Loading role config: {:?}", file);
-        let role_config = RoleConfig::load(file).wrap_err("failed to load role config")?;
+        let role_config = load_toml(&file).wrap_err("failed to load role config")?;
         if verbose > 1 {
             println!("Loaded role config: {:#?}", role_config);
         }
@@ -150,27 +135,16 @@ fn run_command(
 }
 
 #[derive(Debug, Subcommand)]
-pub enum Commands {
+pub(crate) enum Commands {
     /// Lists the specified roles.
     #[command(aliases = ["l", "ls"])]
     List(list::List),
 
     /// Installs the specified roles.
     #[command(aliases = ["i"])]
-    Install(RoleArgs),
+    Install(install::Install),
 
     /// Removes the specified roles.
     #[command(aliases = ["r"])]
-    Remove(RoleArgs),
-}
-
-#[derive(Clone, Default, Debug, Args)]
-pub struct RoleArgs {
-    /// Filters the roles to act on.
-    #[clap(allow_hyphen_values = false)]
-    pub filter: Vec<String>,
-
-    /// Synchronize the configured roles.
-    #[clap(short, long)]
-    pub sync: bool,
+    Remove(remove::Remove),
 }

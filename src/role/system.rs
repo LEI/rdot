@@ -1,14 +1,14 @@
 use serde::Deserialize;
 
 #[derive(Clone, Debug, Default, Deserialize)]
-pub struct SystemPackage {
+pub(crate) struct SystemPackage {
     /// System package version.
     #[serde(default = "default_version")]
-    pub version: String,
+    pub(crate) version: String,
 
     /// Prevents the package from being removed.
     #[serde(default)]
-    pub keep: bool,
+    pub(crate) keep: bool,
 }
 
 fn default_version() -> String {
@@ -17,7 +17,7 @@ fn default_version() -> String {
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-pub enum SystemPackageValue {
+pub(crate) enum SystemPackageValue {
     /// Represents a TOML string
     String(String),
     // /// Represents a TOML integer

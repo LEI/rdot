@@ -10,20 +10,20 @@ use color_eyre::{
     Result,
 };
 
-use crate::{core::dirs, role::Action};
+use crate::{config::dirs, role::action::Action};
 
 use super::config::RoleSettings;
 
-pub struct Link {
+pub(crate) struct Link {
     /// The path to the source file
-    pub original: PathBuf,
+    pub(crate) original: PathBuf,
 
     /// The path to the target file
-    pub link: PathBuf,
+    pub(crate) link: PathBuf,
 }
 
 impl Link {
-    pub fn execute(
+    pub(crate) fn execute(
         &self,
         action: Action,
         directory: PathBuf,

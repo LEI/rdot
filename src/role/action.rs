@@ -5,44 +5,46 @@ use color_eyre::Result;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    core::config::RoleValue,
-    role::{config::RoleConfig, line::Line, link::Link, system::SystemPackage, Action},
+    config::RoleValue,
+    role::{config::RoleConfig, line::Line, link::Link, system::SystemPackage},
     rtx::Rtx,
     system::System,
 };
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum Action {
+    Install,
+    Remove,
+}
+
+impl Display for Action {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let action = match self {
+            Self::Install => "install",
+            Self::Remove => "remove",
+        };
+        write!(f, "{}", action)
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct Role {
+pub(crate) struct Role {
     /// The name of the package to install
-    // This is hidden because the hash map key contains the name
+    // This is hidden because the map key contains the name
     #[serde(skip)]
-    pub name: String,
+    pub(crate) name: String,
 
     /// Operating system
     #[serde(default)]
-    pub os: Vec<String>, // Os,
+    pub(crate) os: Vec<String>, // Os,
 
     /// The path to the role directory
-    pub path: PathBuf,
+    pub(crate) path: PathBuf,
 }
 
 impl Role {
-    /// Lists roles.
-    pub fn list(roles: &Vec<Role>, _sync: bool) -> Result<()> {
-        for role in roles {
-            println!("{}: {}", role.name, role.path.display());
-
-            // if sync {
-            //     let status = role.status();
-            //     println!("Sync status: {:?}", status);
-            // }
-        }
-
-        Ok(())
-    }
-
     /// Installs a role with a given configuration.
-    pub fn install_or_remove(
+    pub(crate) fn install_or_remove(
         &self,
         action: Action,
         config: RoleConfig,
@@ -148,19 +150,6 @@ impl Display for Role {
             self.path.display(),
             self.os // .join(",")
         )
-    }
-}
-
-impl From<(&String, &String)> for Role {
-    fn from(value: (&String, &String)) -> Self {
-        let name = value.0.to_string();
-        let path = PathBuf::from(value.1);
-
-        Self {
-            name,
-            os: vec![],
-            path,
-        }
     }
 }
 

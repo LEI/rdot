@@ -2,19 +2,19 @@ use std::{fmt::Display, fs::read_to_string, path::PathBuf};
 
 use color_eyre::{eyre::eyre, Result};
 
-use crate::{core::dirs, role::Action};
+use crate::{config::dirs, role::action::Action};
 
-pub struct Line {
+pub(crate) struct Line {
     /// The path to the target file
-    pub file: PathBuf,
+    pub(crate) file: PathBuf,
 
     // The line to append or remove
-    pub line: String,
+    pub(crate) line: String,
     // after, always_after?
 }
 
 impl Line {
-    pub fn execute(&self, action: Action, _directory: PathBuf, dry_run: bool) -> Result<()> {
+    pub(crate) fn execute(&self, action: Action, _directory: PathBuf, dry_run: bool) -> Result<()> {
         let line = &self.line;
         let mut target = &self.file;
         let path: PathBuf;

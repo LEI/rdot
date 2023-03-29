@@ -4,13 +4,17 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use color_eyre::eyre::{eyre, Context, Result};
+use color_eyre::eyre::{eyre, Context, ContextCompat, Result};
+use serde::de::DeserializeOwned;
 use serde::Deserialize;
 
-use super::{dirs, role::Role};
+use crate::role::action::Role;
+
+pub(crate) mod dirs;
+mod env;
 
 #[derive(Debug, Deserialize)]
-pub enum Os {
+pub(crate) enum Os {
     Darwin,
     Linux,
     Windows,
@@ -18,7 +22,7 @@ pub enum Os {
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(untagged)]
-pub enum OsValue {
+pub(crate) enum OsValue {
     #[default]
     None,
     String(Os),
@@ -27,7 +31,7 @@ pub enum OsValue {
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-pub enum RoleValue {
+pub(crate) enum RoleValue {
     String(String),
     Table(Role),
 }
@@ -36,26 +40,28 @@ pub enum RoleValue {
 pub struct Config {
     /// Environment
     #[serde(default)]
-    pub env: HashMap<String, String>,
+    pub(crate) env: HashMap<String, String>,
 
     /// Operating system
     #[serde(default)]
-    pub os: OsValue,
+    pub(crate) os: OsValue,
 
     /// Roles
     #[serde(default)]
-    pub roles: HashMap<String, RoleValue>,
+    pub(crate) roles: HashMap<String, RoleValue>,
 
     /// Configuration file path
-    #[serde(default)]
-    pub path: PathBuf,
+    #[serde(skip)]
+    pub(crate) path: PathBuf,
+    // #[serde(default)]
+    // pub(crate) options: GlobalOptions,
 }
 
 impl Config {
-    pub fn load(config_file: &Path) -> Result<Self> {
+    pub(crate) fn load(config_file: &Path) -> Result<Self> {
         let parent_dir = config_file
             .parent()
-            .expect("Config file has no parent directory");
+            .wrap_err("Failed to get config file parent directory")?;
         // Quickfix static config
         let config_file = match parent_dir.to_str().unwrap() {
             "$RDOT_CONFIG_DIR" => dirs::CONFIG
@@ -66,16 +72,14 @@ impl Config {
 
         // let config = Self { env: load_env() };
 
-        let contents = fs::read_to_string(&config_file)
-            .wrap_err(format!("failed to read: {}", &config_file.display()))?;
-        let mut config: Config = toml::from_str(contents.as_str())?;
+        let mut config: Self = load_toml(&config_file)?;
         config.path = config_file;
 
         Ok(config)
     }
 
     /// Filters the configured roles according to the provided filter in arguments.
-    pub fn filter_roles(self, filter: Vec<String>) -> Result<Vec<Role>> {
+    pub(crate) fn filter_roles(self, filter: Vec<String>) -> Result<Vec<Role>> {
         if filter.is_empty() {
             return Ok(self.roles.iter().map(|role| role.into()).collect());
         }
@@ -92,6 +96,15 @@ impl Config {
 
         Ok(result)
     }
+}
+
+pub(crate) fn load_toml<T>(file: &PathBuf) -> Result<T>
+where
+    T: DeserializeOwned,
+{
+    let contents =
+        fs::read_to_string(file).wrap_err(format!("Failed to read: {}", &file.display()))?;
+    toml::from_str(contents.as_str()).wrap_err(format!("Failed to load: {}", &file.display()))
 }
 
 // fn load_env() -> HashMap<String, String> {

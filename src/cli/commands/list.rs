@@ -1,53 +1,41 @@
 use std::io::{StdoutLock, Write};
 
-use clap::{Args, ValueEnum};
+use clap::Args;
+use color_eyre::Result;
 
-use crate::core::config::Config;
+use crate::{
+    cli::{commands::Command, output::Format, GlobalOptions},
+    config::Config,
+};
 
-use super::{command::Command, RoleArgs};
-
-#[derive(Clone, Default, Debug, ValueEnum)]
-pub enum OutputFormat {
-    /// Output in an easily parseable format
-    Raw,
-
-    /// Output in json format
-    Json,
-
-    // #[clap(skip)]
-    #[default]
-    None,
-}
-
-#[derive(Clone, Debug, Default, Args)]
-pub struct List {
+#[derive(Debug, Default, Args)]
+pub(crate) struct List {
     /// Output format
-    #[clap(short, long, value_enum, default_value_t = OutputFormat::None)]
-    format: OutputFormat,
+    #[clap(short, long, value_enum, default_value_t = Format::None)]
+    format: Format,
 
-    /// Common arguments
-    #[clap(flatten)]
-    args: RoleArgs,
+    /// Filter arguments
+    args: Vec<String>,
 }
 
 impl Command for List {
-    fn run(self, config: Config, output: &mut StdoutLock) -> color_eyre::Result<()> {
+    fn run(self, config: Config, _options: GlobalOptions, output: &mut StdoutLock) -> Result<()> {
         let count = &config.roles.len();
-        let roles = config.filter_roles(self.args.filter)?;
+        let roles = config.filter_roles(self.args)?;
 
         match self.format {
-            OutputFormat::Json => {
+            Format::Json => {
                 let json = serde_json::to_string_pretty(&roles)?;
                 writeln!(output, "{}", json)?;
             }
-            OutputFormat::Raw => {
+            Format::Raw => {
                 let lines: Vec<String> = roles
                     .iter()
                     .map(|role| format!("{} {}\n", role.name, role.path.display()))
                     .collect();
                 write!(output, "{}", lines.join(""))?;
             }
-            OutputFormat::None => {
+            Format::None => {
                 writeln!(output, "Available roles: {}", count)?;
 
                 // let pb = indicatif::ProgressBar::new(u64::try_from(roles.len())?);
@@ -62,14 +50,5 @@ impl Command for List {
         }
 
         Ok(())
-    }
-}
-
-impl From<&RoleArgs> for List {
-    fn from(value: &RoleArgs) -> Self {
-        Self {
-            args: value.to_owned(),
-            ..Default::default()
-        }
     }
 }
