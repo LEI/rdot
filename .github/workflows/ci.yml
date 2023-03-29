@@ -1,10 +1,16 @@
-name: CI
+name: Continuous integration
+
 on:
+  merge_group:
   pull_request:
   push:
     branches:
       - main
-  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   check:
