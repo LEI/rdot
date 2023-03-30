@@ -2,10 +2,11 @@ use std::fmt::Display;
 use std::path::PathBuf;
 
 use color_eyre::Result;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config::RoleValue,
+    config::{os::OsValue, RoleValue},
     role::{config::RoleConfig, line::Line, link::Link, system::SystemPackage},
     rtx::Rtx,
     system::System,
@@ -27,16 +28,17 @@ impl Display for Action {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema, Serialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct Role {
     /// The name of the package to install
     // This is hidden because the map key contains the name
     #[serde(skip)]
     pub(crate) name: String,
 
-    /// Operating system
+    /// Supported operating systems
     #[serde(default)]
-    pub(crate) os: Vec<String>, // Os,
+    pub(crate) os: Option<OsValue>,
 
     /// The path to the role directory
     pub(crate) path: PathBuf,
@@ -56,6 +58,10 @@ impl Role {
         let role_settings = config.settings;
         if verbose > 0 {
             println!("Role settings: {:#?}", role_settings);
+        }
+
+        for os in &config.os {
+            println!("# OS: {}", os);
         }
 
         for dep in &config.dependencies {

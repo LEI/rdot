@@ -5,7 +5,12 @@ use serde::Deserialize;
 use super::system::SystemPackageValue;
 
 #[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct RoleConfig {
+    /// Supported operating systems
+    #[serde(default)]
+    pub(crate) os: Vec<String>,
+
     /// Dependencies
     #[serde(default)]
     pub(crate) dependencies: HashMap<String, String>,
@@ -36,6 +41,7 @@ pub(crate) struct RoleConfig {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
+// #[serde(deny_unknown_fields)]
 pub(crate) struct RoleSettings {
     /// Remove empty directories when uninstalling.
     #[serde(default = "default_to_true")]

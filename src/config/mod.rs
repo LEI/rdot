@@ -1,53 +1,57 @@
 use std::{
     collections::HashMap,
-    fs,
+    env::set_var,
     path::{Path, PathBuf},
 };
 
-use color_eyre::eyre::{eyre, Context, ContextCompat, Result};
-use serde::de::DeserializeOwned;
-use serde::Deserialize;
+use color_eyre::eyre::{eyre, ContextCompat, Result};
+
+use schemars::{schema_for, JsonSchema};
+use serde::{Deserialize, Serialize};
 
 use crate::role::action::Role;
 
+use self::{init::init_env, loader::load_toml};
+
 pub(crate) mod dirs;
 mod env;
+pub(crate) mod init;
+pub(crate) mod loader;
+pub(crate) mod os;
 
-#[derive(Debug, Deserialize)]
-pub(crate) enum Os {
-    Darwin,
-    Linux,
-    Windows,
-}
+const SCHEMA_NAME: &str = "schema.json";
 
-#[derive(Debug, Default, Deserialize)]
-#[serde(untagged)]
-pub(crate) enum OsValue {
-    #[default]
-    None,
-    String(Os),
-    Array(Vec<Os>),
-}
+// #[derive(Debug, Deserialize, JsonSchema)]
+// enum EnvMap {
+//     Table(HashMap<String, String>),
+// }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(untagged)]
 pub(crate) enum RoleValue {
     String(String),
     Table(Role),
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize, JsonSchema, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     /// Environment
-    #[serde(default)]
+    #[serde(
+        default,
+        // with = "indexmap::serde_seq",
+        // deserialize_with = "indexmap::serde_seq::deserialize"
+    )]
     pub(crate) env: HashMap<String, String>,
+    // pub(crate) env: IndexMap<String, String, RandomState>,
+    // pub(crate) env: Option<EnvMap>,
 
-    /// Operating system
-    #[serde(default)]
-    pub(crate) os: OsValue,
-
+    // /// Supported operating systems
+    // #[serde(default)]
+    // pub(crate) os: Vec<Os>,
     /// Roles
-    #[serde(default)]
+    // #[serde(default)]
+    // pub(crate) roles: RoleMap,
     pub(crate) roles: HashMap<String, RoleValue>,
 
     /// Configuration file path
@@ -58,30 +62,55 @@ pub struct Config {
 }
 
 impl Config {
-    pub(crate) fn load(config_file: &Path) -> Result<Self> {
-        let parent_dir = config_file
-            .parent()
-            .wrap_err("Failed to get config file parent directory")?;
-        // Quickfix static config
-        let config_file = match parent_dir.to_str().unwrap() {
-            "$RDOT_CONFIG_DIR" => dirs::CONFIG
-                .to_path_buf()
-                .join(config_file.strip_prefix("$RDOT_CONFIG_DIR")?),
-            _ => config_file.to_path_buf(),
-        };
+    pub(crate) fn get_schema() -> schemars::schema::RootSchema {
+        let schema = schema_for!(Config);
 
-        // let config = Self { env: load_env() };
+        schema
+    }
+
+    pub(crate) fn get_schema_json() -> Result<String> {
+        let schema = Self::get_schema();
+        let json = serde_json::to_string_pretty(&schema)?;
+
+        Ok(json)
+    }
+
+    pub(crate) fn get_default_toml() -> Result<String> {
+        let config = Self::default();
+        let toml = toml::to_string(&config)?;
+
+        Ok(toml)
+    }
+
+    pub(crate) fn load(config_file: &Path) -> Result<Self> {
+        init_env();
+        let config_file = expand(config_file)?;
 
         let mut config: Self = load_toml(&config_file)?;
         config.path = config_file;
 
+        config.update_env();
+
         Ok(config)
     }
 
+    /// Updates environment variables.
+    pub(crate) fn update_env(&self) {
+        for (key, value) in &self.env {
+            log::debug!("export {}={:?}", key, value);
+            set_var(key, value);
+        }
+    }
+
+    /// Lists all available roles.
+    pub(crate) fn get_roles(&self) -> Vec<Role> {
+        self.roles.iter().map(|role| role.into()).collect()
+    }
+
     /// Filters the configured roles according to the provided filter in arguments.
-    pub(crate) fn filter_roles(self, filter: Vec<String>) -> Result<Vec<Role>> {
+    pub(crate) fn filter_roles(&self, filter: Vec<String>) -> Result<Vec<Role>> {
         if filter.is_empty() {
-            return Ok(self.roles.iter().map(|role| role.into()).collect());
+            return Ok(self.get_roles());
         }
 
         let mut result: Vec<Role> = vec![];
@@ -98,17 +127,19 @@ impl Config {
     }
 }
 
-pub(crate) fn load_toml<T>(file: &PathBuf) -> Result<T>
-where
-    T: DeserializeOwned,
-{
-    let contents =
-        fs::read_to_string(file).wrap_err(format!("Failed to read: {}", &file.display()))?;
-    toml::from_str(contents.as_str()).wrap_err(format!("Failed to load: {}", &file.display()))
+fn get_parent_dir(file: &Path) -> Result<PathBuf> {
+    let parent_dir = file
+        .parent()
+        .wrap_err("Failed to get config file parent directory")?
+        .to_path_buf();
+
+    Ok(parent_dir)
 }
 
-// fn load_env() -> HashMap<String, String> {
-//     let mut env = HashMap::new();
+fn expand(file: &Path) -> Result<PathBuf> {
+    let config_file = shellexpand::full(&file.to_string_lossy())?
+        .to_string()
+        .into();
 
-//     env
-// }
+    Ok(config_file)
+}

@@ -19,8 +19,9 @@ pub(crate) struct List {
 }
 
 impl Command for List {
-    fn run(self, config: Config, _options: GlobalOptions, output: &mut StdoutLock) -> Result<()> {
-        let count = &config.roles.len();
+    fn run(self, config: &Config, _options: GlobalOptions, output: &mut StdoutLock) -> Result<()> {
+        println!("Global environment: {:#?}", config.env);
+        let count = &config.get_roles().len();
         let roles = config.filter_roles(self.args)?;
 
         match self.format {

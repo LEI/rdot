@@ -1,6 +1,7 @@
 use serde::Deserialize;
 
 #[derive(Clone, Debug, Default, Deserialize)]
+// #[serde(deny_unknown_fields)]
 pub(crate) struct SystemPackage {
     /// System package version.
     #[serde(default = "default_version")]

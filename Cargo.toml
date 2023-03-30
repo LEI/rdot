@@ -12,15 +12,13 @@ dirs-next = "2.0.0"
 indicatif = "0.17.3"
 lazy_static = "1.4.0"
 log = "0.4.17"
+schemars = "0.8.12"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.95"
+shellexpand = "3.1.0"
 toml = "0.7.3"
 
 [dev-dependencies]
 assert_cmd = { version = "2.0.10", features = ["color"] }
 env_logger = "0.10.0"
 predicates = "3.0.2"
-
-# https://docs.rs/color-eyre/latest/color_eyre/#improving-perf-on-debug-builds
-[profile.dev.package.backtrace]
-opt-level = 3
