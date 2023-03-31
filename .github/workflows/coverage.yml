@@ -20,8 +20,9 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
 
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@stable
+      # Nightly is not required, but stable is already tested in ./ci.yml
+      - name: Install nightly toolchain with llvm-tools-preview
+        uses: dtolnay/rust-toolchain@nightly
         with:
           components: llvm-tools-preview
 
