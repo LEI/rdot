@@ -11,7 +11,7 @@ dialoguer = "0.10.4"
 dirs-next = "2.0.0"
 indicatif = "0.17.6"
 lazy_static = "1.4.0"
-log = "0.4.19"
+log = "0.4.20"
 schemars = "0.8.12"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.103"
