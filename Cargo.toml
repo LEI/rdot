@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.4", features = ["cargo", "derive", "env", "string"] }
+clap = { version = "4.5", features = ["cargo", "derive", "env", "string"] }
 color-eyre = "0.6"
 console = "0.15.8"
 dialoguer = "0.11.0"
