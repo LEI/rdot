@@ -1,8 +1,5 @@
 [roles]
-git = "./git"
+git = "./git"                                      # "LEI/git"
 guix = { os = ["linux"], path = "./guix" }
 rtx = { os = ["darwin", "linux"], path = "./rtx" }
 starship = "./starship"
-
-# [linux]
-# guix = "./guix"

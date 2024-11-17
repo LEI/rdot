@@ -3,9 +3,6 @@ name = "rdot"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-doctest = false
-
 [dependencies]
 clap = { version = "4.4", features = ["cargo", "derive", "env", "string"] }
 color-eyre = "0.6"
@@ -33,3 +30,10 @@ predicates = "3.1.0"
 default = ["git", "json-schema"]
 git = ["gix"]
 json-schema = ["schemars"]
+
+[lib]
+doctest = false
+
+# Always build backtrace with optimizations
+[profile.dev.package.backtrace]
+opt-level = 3

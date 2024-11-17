@@ -92,14 +92,16 @@ impl Config {
     }
 
     /// Lists all available roles.
-    pub(crate) fn get_roles(&self) -> Vec<Role> {
-        self.roles.iter().map(|tuple| tuple.into()).collect()
+    pub(crate) fn get_roles(&self) -> Result<Vec<Role>> {
+        let roles = self.roles.iter().map(|tuple| tuple.into()).collect();
+
+        Ok(roles)
     }
 
     /// Filters the configured roles according to the provided filter in arguments.
     pub(crate) fn filter_roles(&self, filter: Vec<String>) -> Result<Vec<Role>> {
         if filter.is_empty() {
-            return Ok(self.get_roles());
+            return self.get_roles();
         }
 
         // let mut result = Vec::new();

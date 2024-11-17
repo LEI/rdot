@@ -1,8 +1,15 @@
-use color_eyre::{
-    eyre::{eyre, Context, Result},
-    Report,
-};
+use std::path::PathBuf;
 
-fn get(repo: &str) -> Result<()> {
-    Ok(())
+use color_eyre::eyre::Result;
+
+use super::Vcs;
+
+struct Git {}
+
+impl Vcs for Git {
+    fn get(&self, url: String, name: String) -> Result<PathBuf> {
+        let path = PathBuf::new();
+
+        Ok(path)
+    }
 }

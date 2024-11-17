@@ -6,6 +6,7 @@ use color_eyre::Result;
 use crate::{
     cli::{commands::Command, Options},
     config::Config,
+    vcs::parse,
 };
 
 const PROGRESS_TEMPLATE: &str = "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}";
@@ -43,6 +44,9 @@ impl Command for Sync {
             // pb.println(format!("[+] {}: {}", role.name, role.path.display()));
             // "    Finished de"
             pb.println(format!("[+] {}", role));
+
+            pb.println(format!("Git: {:#?}", parse(role.name)));
+
             pb.inc(1);
         }
         pb.finish_with_message("done");

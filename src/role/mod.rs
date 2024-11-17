@@ -35,6 +35,10 @@ pub(crate) struct Role {
 
     /// The path to the role directory.
     pub(crate) path: PathBuf,
+
+    /// The location of the remote repository.
+    #[serde(default)]
+    pub(crate) url: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -152,19 +156,44 @@ impl Display for Role {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{}: {} {:?}",
+            "{}: {} ({}) {:?}",
             self.name,
             self.path.display(),
+            self.url,
             self.os // .join(",")
         )
     }
 }
 
+// #[derive(Debug, PartialEq, Eq)]
+// pub(crate) struct ParseRoleError;
+
+// impl Display for ParseRoleError {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "Parse role error")
+//     }
+// }
+
+// impl FromStr for Role {
+//     type Err = ParseRoleError;
+
+//     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+//         let role = Self {
+//             name: String::new(),
+//             path: PathBuf::new(),
+//             url: s.to_string(),
+//             os: None,
+//         };
+
+//         Ok(role)
+//     }
+// }
+
 impl From<(&String, &RoleValue)> for Role {
     fn from(value: (&String, &RoleValue)) -> Self {
         let name = value.0.to_string();
 
-        let mut role: Role = value.1.into();
+        let mut role = Role::from(value.1);
         role.name = name;
 
         role
@@ -179,7 +208,37 @@ impl From<&RoleValue> for Role {
                 path: PathBuf::from(value),
                 ..Default::default()
             },
+            // RoleValue::String(value) => Role::from_str(value.as_str()).expect("role"),
             RoleValue::Table(value) => value.clone(),
         }
     }
 }
+
+// impl TryFrom<(&String, &RoleValue)> for Role {
+//     type Error = ParseRoleError;
+
+//     fn try_from(value: (&String, &RoleValue)) -> std::result::Result<Self, Self::Error> {
+//         let name = value.0.to_string();
+
+//         let mut role = Role::try_from(value.1)?;
+//         role.name = name;
+
+//         Ok(role)
+//     }
+// }
+
+// impl TryFrom<&RoleValue> for Role {
+//     type Error = ParseRoleError;
+
+//     fn try_from(value: &RoleValue) -> std::result::Result<Self, Self::Error> {
+//         match value {
+//             // RoleValue::String(value) => Role {
+//             //     // name: value.to_string(),
+//             //     path: PathBuf::from(value),
+//             //     ..Default::default()
+//             // },
+//             RoleValue::String(value) => Role::from_str(value.as_str()),
+//             RoleValue::Table(value) => Ok(value.clone()),
+//         }
+//     }
+// }
