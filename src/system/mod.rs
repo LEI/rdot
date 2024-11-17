@@ -33,7 +33,7 @@ struct PackageManager {
 }
 
 impl PackageManager {
-    pub(crate) fn new() -> Self {
+    fn new() -> Self {
         #[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
         let name = "apt-get"; // FIXME: detect distrib
         #[cfg(target_os = "macos")]

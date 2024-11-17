@@ -25,10 +25,10 @@ pub(crate) struct Link {
 impl Link {
     pub(crate) fn execute(
         &self,
-        action: Action,
+        action: &Action,
         directory: PathBuf,
         dry_run: bool,
-        settings: RoleSettings,
+        settings: &RoleSettings,
     ) -> Result<()> {
         let source = if self.original.is_relative() {
             directory.join(&self.original)

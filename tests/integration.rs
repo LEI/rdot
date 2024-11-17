@@ -1,36 +1,44 @@
 use assert_cmd::Command;
+use color_eyre::eyre::Result;
 use predicates::prelude::*;
 
 const DRY_RUN: &str = "Dry-run";
 const USAGE: &str = "Usage:";
 const ROLE_COUNT: usize = 4;
 
-fn bin() -> Command {
-    Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap()
+fn bin() -> Result<Command> {
+    let name = env!("CARGO_PKG_NAME");
+    let cmd = Command::cargo_bin(name)?;
+
+    Ok(cmd)
 }
 
 #[test]
-fn root_command() {
-    bin()
+fn root_command() -> Result<()> {
+    bin()?
         .arg("--dry-run")
         .assert()
         .failure()
         .code(2)
         .stderr(predicate::str::contains(USAGE));
+
+    Ok(())
 }
 
 #[test]
-fn help_command() {
-    bin()
+fn help_command() -> Result<()> {
+    bin()?
         .arg("help")
         .assert()
         .success()
         .stdout(predicate::str::contains(USAGE));
+
+    Ok(())
 }
 
 #[test]
-fn init_command() {
-    bin()
+fn init_command() -> Result<()> {
+    bin()?
         .arg("init")
         .arg("--config=none")
         .arg("--dry-run")
@@ -38,11 +46,13 @@ fn init_command() {
         .assert()
         .success()
         .stdout(predicate::str::contains("Created"));
+
+    Ok(())
 }
 
 #[test]
-fn list_command() {
-    bin()
+fn list_command() -> Result<()> {
+    bin()?
         .arg("list")
         .arg("git")
         .arg("--config=examples")
@@ -50,12 +60,14 @@ fn list_command() {
         .arg("--format=raw")
         .assert()
         .success()
-        .stdout(predicate::str::is_match("^Dry-run\ngit \\./git\n$").unwrap());
+        .stdout(predicate::str::is_match("^Dry-run\ngit \\./git\n$")?);
+
+    Ok(())
 }
 
 #[test]
-fn list_command_env() {
-    bin()
+fn list_command_env() -> Result<()> {
+    bin()?
         .arg("list")
         .arg("--dry-run")
         .env("RDOT_CONFIG_DIR", "examples")
@@ -65,37 +77,45 @@ fn list_command_env() {
             "Available roles: {}\n",
             ROLE_COUNT
         )));
+
+    Ok(())
 }
 
 #[test]
-fn install_command() {
-    bin()
+fn install_command() -> Result<()> {
+    bin()?
         .arg("--dry-run")
         .arg("install")
         .arg("--config=examples")
         .assert()
         .success()
         .stdout(predicate::str::contains(DRY_RUN));
+
+    Ok(())
 }
 
 #[test]
-fn remove_command() {
-    bin()
+fn remove_command() -> Result<()> {
+    bin()?
         .arg("--dry-run")
         .arg("remove")
         .arg("--config=examples")
         .assert()
         .success()
         .stdout(predicate::str::contains(DRY_RUN));
+
+    Ok(())
 }
 
 #[test]
-fn sync_command() {
-    bin()
+fn sync_command() -> Result<()> {
+    bin()?
         .arg("sync")
         .arg("--config=examples")
         .arg("--dry-run")
         .assert()
         .success()
-        .stdout(predicate::str::is_match("Dry-run").unwrap());
+        .stdout(predicate::str::is_match("Dry-run")?);
+
+    Ok(())
 }

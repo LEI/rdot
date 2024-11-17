@@ -40,7 +40,7 @@ pub(crate) struct RoleConfig {
     pub(crate) tools: HashMap<String, String>,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Debug, Deserialize)]
 // #[serde(deny_unknown_fields)]
 pub(crate) struct RoleSettings {
     /// Remove empty directories when uninstalling.

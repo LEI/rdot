@@ -5,7 +5,7 @@ use color_eyre::Result;
 
 use crate::{
     cli::{
-        options::{GlobalOptions, RoleOptions},
+        options::{Options, RoleOptions},
         run_command,
     },
     config::Config,
@@ -14,7 +14,7 @@ use crate::{
 
 use super::Command;
 
-#[derive(Clone, Debug, Default, Args)]
+#[derive(Debug, Default, Args)]
 pub(crate) struct Install {
     /// Filter arguments
     args: Vec<String>,
@@ -24,12 +24,12 @@ pub(crate) struct Install {
 }
 
 impl Command for Install {
-    fn run(self, config: &Config, options: GlobalOptions, _output: &mut StdoutLock) -> Result<()> {
+    fn run(self, config: &Config, options: Options, _output: &mut StdoutLock) -> Result<()> {
         let mut roles = config.filter_roles(self.args)?;
         let file_name = self.options.role_config_name;
 
         run_command(
-            Action::Install,
+            &Action::Install,
             &mut roles,
             &options.config_dir,
             &file_name,

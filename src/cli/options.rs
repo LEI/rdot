@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 // use crate::config::dirs;
 
 #[derive(Clone, Debug, Default, Parser, Serialize, Deserialize)]
-pub struct GlobalOptions {
-    /// The full path to the global configuration directory.
+pub struct Options {
+    /// The full path to the configuration directory.
     #[arg(
         default_value = "$RDOT_CONFIG_DIR",
         env = "RDOT_CONFIG_DIR",
@@ -45,7 +45,7 @@ pub struct GlobalOptions {
 pub(crate) struct RoleOptions {
     /// The name of the role configuration file.
     #[arg(
-        default_value = "Dotfile",
+        default_value = "Dotfile", // role.toml?
         global = true,
         help_heading = "Configuration",
         long

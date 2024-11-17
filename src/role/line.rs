@@ -14,7 +14,12 @@ pub(crate) struct Line {
 }
 
 impl Line {
-    pub(crate) fn execute(&self, action: Action, _directory: PathBuf, dry_run: bool) -> Result<()> {
+    pub(crate) fn execute(
+        &self,
+        action: &Action,
+        _directory: PathBuf,
+        dry_run: bool,
+    ) -> Result<()> {
         let line = &self.line;
         let mut target = &self.file;
         let path: PathBuf;

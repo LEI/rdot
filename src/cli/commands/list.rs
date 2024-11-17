@@ -4,7 +4,7 @@ use clap::Args;
 use color_eyre::Result;
 
 use crate::{
-    cli::{commands::Command, output::Format, GlobalOptions},
+    cli::{commands::Command, output::Format, Options},
     config::Config,
 };
 
@@ -21,9 +21,8 @@ pub(crate) struct List {
 }
 
 impl Command for List {
-    fn run(self, config: &Config, _options: GlobalOptions, output: &mut StdoutLock) -> Result<()> {
-        debug!("Global environment: {:#?}", config.env);
-        let count = &config.get_roles().len();
+    fn run(self, config: &Config, _options: Options, output: &mut StdoutLock) -> Result<()> {
+        debug!("Environment: {:#?}", config.env);
         let roles = config.filter_roles(self.args)?;
 
         match self.format {
@@ -39,7 +38,7 @@ impl Command for List {
                 write!(output, "{}", lines.join(""))?;
             }
             Format::Default => {
-                writeln!(output, "Available roles: {}", count)?;
+                writeln!(output, "Available roles: {}", config.roles.iter().len())?;
 
                 let pb = indicatif::ProgressBar::new(u64::try_from(roles.len())?);
                 pb.set_style(

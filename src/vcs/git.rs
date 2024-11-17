@@ -3,6 +3,6 @@ use color_eyre::{
     Report,
 };
 
-pub(crate) fn clone(repo: &str) -> Result<()> {
+fn get(repo: &str) -> Result<()> {
     Ok(())
 }

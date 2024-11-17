@@ -4,12 +4,12 @@ use clap::Args;
 use color_eyre::Result;
 
 use crate::{
-    cli::{commands::Command, options::RoleOptions, run_command, GlobalOptions},
+    cli::{commands::Command, options::RoleOptions, run_command, Options},
     config::Config,
     role::action::Action,
 };
 
-#[derive(Clone, Debug, Default, Args)]
+#[derive(Debug, Default, Args)]
 pub(crate) struct Remove {
     /// Filter arguments
     args: Vec<String>,
@@ -19,12 +19,12 @@ pub(crate) struct Remove {
 }
 
 impl Command for Remove {
-    fn run(self, config: &Config, options: GlobalOptions, _output: &mut StdoutLock) -> Result<()> {
+    fn run(self, config: &Config, options: Options, _output: &mut StdoutLock) -> Result<()> {
         let mut roles = config.filter_roles(self.args)?;
         let file_name = self.options.role_config_name;
 
         run_command(
-            Action::Remove,
+            &Action::Remove,
             &mut roles,
             &options.config_dir,
             &file_name,

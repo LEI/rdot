@@ -4,7 +4,7 @@ use clap::Args;
 use color_eyre::Result;
 
 use crate::{
-    cli::{commands::Command, GlobalOptions},
+    cli::{commands::Command, Options},
     config::Config,
 };
 
@@ -20,14 +20,16 @@ pub(crate) struct Sync {
 }
 
 impl Command for Sync {
-    fn run(self, config: &Config, _options: GlobalOptions, output: &mut StdoutLock) -> Result<()> {
-        debug!("Global environment: {:#?}", config.env);
-        let count = &config.get_roles().len();
+    fn run(self, config: &Config, _options: Options, output: &mut StdoutLock) -> Result<()> {
+        debug!("Environment: {:#?}", config.env);
         let roles = config.filter_roles(self.args)?;
 
-        writeln!(output, "Available roles: {}", count)?;
+        writeln!(output, "Available roles: {}", config.roles.iter().len())?;
 
-        let pb = indicatif::ProgressBar::new(u64::try_from(roles.len())?);
+        let len = u64::try_from(roles.len())?;
+        // show(len, "Syncing");
+
+        let pb = indicatif::ProgressBar::new(len);
         pb.set_style(
             indicatif::ProgressStyle::with_template(PROGRESS_TEMPLATE)
                 .unwrap()

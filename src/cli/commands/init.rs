@@ -4,7 +4,7 @@ use clap::Args;
 use color_eyre::eyre::Result;
 
 use crate::{
-    cli::{options::GlobalOptions, progress::show},
+    cli::{options::Options, progress::show},
     config::{
         init::{init_dir, InitDirOptions},
         Config,
@@ -21,7 +21,7 @@ pub(crate) struct Init {
 }
 
 impl Command for Init {
-    fn run(self, config: &Config, options: GlobalOptions, output: &mut StdoutLock) -> Result<()> {
+    fn run(self, config: &Config, options: Options, output: &mut StdoutLock) -> Result<()> {
         let created = init_dir(
             &options.config_dir,
             InitDirOptions {

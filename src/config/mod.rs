@@ -10,7 +10,7 @@ use color_eyre::eyre::{eyre, Result};
 use schemars::{schema_for, JsonSchema};
 use serde::{Deserialize, Serialize};
 
-use crate::role::action::Role;
+use crate::role::{Role, RoleValue};
 
 use self::loader::load_toml;
 
@@ -22,14 +22,6 @@ pub(crate) mod os;
 
 #[cfg(feature = "json-schema")]
 const SCHEMA_NAME: &str = "schema.json";
-
-#[derive(Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "json-schema", derive(JsonSchema))]
-#[serde(untagged)]
-pub(crate) enum RoleValue {
-    String(String),
-    Table(Role),
-}
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[cfg_attr(feature = "json-schema", derive(JsonSchema))]
@@ -101,7 +93,7 @@ impl Config {
 
     /// Lists all available roles.
     pub(crate) fn get_roles(&self) -> Vec<Role> {
-        self.roles.iter().map(|role| role.into()).collect()
+        self.roles.iter().map(|tuple| tuple.into()).collect()
     }
 
     /// Filters the configured roles according to the provided filter in arguments.
@@ -110,17 +102,25 @@ impl Config {
             return Ok(self.get_roles());
         }
 
-        let mut result: Vec<Role> = vec![];
+        // let mut result = Vec::new();
+        // for arg in &filter {
+        //     if let Some(role) = self.roles.get(arg) {
+        //         result.push(role.into());
+        //     } else {
+        //         return Err(eyre!("Invalid role name in arguments: {}", arg));
+        //     }
+        // }
+        // Ok(result)
 
-        for arg in &filter {
-            let role = self.roles.iter().find(|role| role.0 == arg);
-            if role.is_none() {
-                return Err(eyre!("Invalid role name in arguments: {}", arg));
+        let find = |arg| {
+            if let Some(role) = self.roles.get(arg) {
+                Ok(role.into())
+            } else {
+                Err(eyre!("Invalid role name in arguments: {}", arg))
             }
-            result.push(role.unwrap().into());
-        }
+        };
 
-        Ok(result)
+        filter.iter().map(find).collect()
     }
 }
 
