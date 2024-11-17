@@ -8,10 +8,12 @@ use crate::{
     config::Config,
 };
 
+const PROGRESS_TEMPLATE: &str = "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}";
+
 #[derive(Debug, Default, Args)]
 pub(crate) struct List {
     /// Output format
-    #[clap(short, long, value_enum, default_value_t = Format::None)]
+    #[clap(short, long, value_enum, default_value_t = Format::Default)]
     format: Format,
 
     /// Filter arguments
@@ -20,7 +22,7 @@ pub(crate) struct List {
 
 impl Command for List {
     fn run(self, config: &Config, _options: GlobalOptions, output: &mut StdoutLock) -> Result<()> {
-        println!("Global environment: {:#?}", config.env);
+        debug!("Global environment: {:#?}", config.env);
         let count = &config.get_roles().len();
         let roles = config.filter_roles(self.args)?;
 
@@ -36,17 +38,27 @@ impl Command for List {
                     .collect();
                 write!(output, "{}", lines.join(""))?;
             }
-            Format::None => {
+            Format::Default => {
                 writeln!(output, "Available roles: {}", count)?;
 
-                // let pb = indicatif::ProgressBar::new(u64::try_from(roles.len())?);
+                let pb = indicatif::ProgressBar::new(u64::try_from(roles.len())?);
+                pb.set_style(
+                    indicatif::ProgressStyle::with_template(PROGRESS_TEMPLATE)
+                        .unwrap()
+                        .progress_chars("##-"),
+                );
                 for role in roles {
+                    // writeln!(output, "{}", role)?;
+
                     // std::thread::sleep(std::time::Duration::from_millis(1000));
-                    writeln!(output, "{}", role)?;
+
                     // pb.println(format!("[+] {}: {}", role.name, role.path.display()));
-                    // pb.inc(1);
+                    // "    Finished de"
+                    pb.println(format!("[+] {}", role));
+                    pb.inc(1);
                 }
-                // pb.finish_with_message("done");
+                pb.finish_with_message("done");
+                // HumanDuration(Duration::from_secs(8)).to_string()
             }
         }
 

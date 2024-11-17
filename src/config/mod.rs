@@ -4,14 +4,15 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use color_eyre::eyre::{eyre, ContextCompat, Result};
+use color_eyre::eyre::{eyre, Result};
 
+#[cfg(feature = "json-schema")]
 use schemars::{schema_for, JsonSchema};
 use serde::{Deserialize, Serialize};
 
 use crate::role::action::Role;
 
-use self::{init::init_env, loader::load_toml};
+use self::loader::load_toml;
 
 pub(crate) mod dirs;
 mod env;
@@ -19,34 +20,26 @@ pub(crate) mod init;
 pub(crate) mod loader;
 pub(crate) mod os;
 
+#[cfg(feature = "json-schema")]
 const SCHEMA_NAME: &str = "schema.json";
 
-// #[derive(Debug, Deserialize, JsonSchema)]
-// enum EnvMap {
-//     Table(HashMap<String, String>),
-// }
-
-#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "json-schema", derive(JsonSchema))]
 #[serde(untagged)]
 pub(crate) enum RoleValue {
     String(String),
     Table(Role),
 }
 
-#[derive(Debug, Default, Deserialize, JsonSchema, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[cfg_attr(feature = "json-schema", derive(JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    /// Environment
-    #[serde(
-        default,
-        // with = "indexmap::serde_seq",
-        // deserialize_with = "indexmap::serde_seq::deserialize"
-    )]
-    pub(crate) env: HashMap<String, String>,
-    // pub(crate) env: IndexMap<String, String, RandomState>,
-    // pub(crate) env: Option<EnvMap>,
+    /// Environment variables.
+    #[serde(default)]
+    pub(crate) env: Option<HashMap<String, String>>,
 
-    // /// Supported operating systems
+    // /// Supported operating systems.
     // #[serde(default)]
     // pub(crate) os: Vec<Os>,
     /// Roles
@@ -54,7 +47,7 @@ pub struct Config {
     // pub(crate) roles: RoleMap,
     pub(crate) roles: HashMap<String, RoleValue>,
 
-    /// Configuration file path
+    /// Resolved configuration file path.
     #[serde(skip)]
     pub(crate) path: PathBuf,
     // #[serde(default)]
@@ -62,12 +55,14 @@ pub struct Config {
 }
 
 impl Config {
+    #[cfg(feature = "json-schema")]
     pub(crate) fn get_schema() -> schemars::schema::RootSchema {
         let schema = schema_for!(Config);
 
         schema
     }
 
+    #[cfg(feature = "json-schema")]
     pub(crate) fn get_schema_json() -> Result<String> {
         let schema = Self::get_schema();
         let json = serde_json::to_string_pretty(&schema)?;
@@ -83,11 +78,11 @@ impl Config {
     }
 
     pub(crate) fn load(config_file: &Path) -> Result<Self> {
-        init_env();
         let config_file = expand(config_file)?;
 
         let mut config: Self = load_toml(&config_file)?;
         config.path = config_file;
+        debug!("set config path from load {}", config.path.display());
 
         config.update_env();
 
@@ -96,9 +91,11 @@ impl Config {
 
     /// Updates environment variables.
     pub(crate) fn update_env(&self) {
-        for (key, value) in &self.env {
-            log::debug!("export {}={:?}", key, value);
-            set_var(key, value);
+        if let Some(env) = &self.env {
+            for (key, value) in env {
+                println!("export {}={:?}", key, value);
+                set_var(key, value);
+            }
         }
     }
 
@@ -127,16 +124,7 @@ impl Config {
     }
 }
 
-fn get_parent_dir(file: &Path) -> Result<PathBuf> {
-    let parent_dir = file
-        .parent()
-        .wrap_err("Failed to get config file parent directory")?
-        .to_path_buf();
-
-    Ok(parent_dir)
-}
-
-fn expand(file: &Path) -> Result<PathBuf> {
+pub(crate) fn expand(file: &Path) -> Result<PathBuf> {
     let config_file = shellexpand::full(&file.to_string_lossy())?
         .to_string()
         .into();

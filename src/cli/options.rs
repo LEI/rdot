@@ -3,22 +3,26 @@ use std::path::PathBuf;
 use clap::{ArgAction, Parser};
 use serde::{Deserialize, Serialize};
 
+// TODO: shellexpand usage?
 // use crate::config::dirs;
-
-const DEFAULT_CONFIG_FILE: &str = "$RDOT_CONFIG_DIR/config.toml";
 
 #[derive(Clone, Debug, Default, Parser, Serialize, Deserialize)]
 pub struct GlobalOptions {
-    /// The path to the global configuration file.
+    /// The full path to the global configuration directory.
     #[arg(
-        short,
-        long,
-        default_value = DEFAULT_CONFIG_FILE,
-        global = true
+        default_value = "$RDOT_CONFIG_DIR",
+        env = "RDOT_CONFIG_DIR",
+        global = true,
+        help_heading = "Configuration",
+        hide = true,
+        // hide_default_value = true, // Default value is already shown by `env`
+        long = "config",
+        // next_line_help = true,
+        short
     )]
-    pub(crate) config_file: PathBuf,
+    pub(crate) config_dir: PathBuf,
 
-    /// Runs without applying changes.
+    /// Prints actions without applying changes.
     #[arg(short, long, global = true)]
     pub(crate) dry_run: bool,
 
@@ -26,7 +30,7 @@ pub struct GlobalOptions {
     #[arg(short, long, action = ArgAction::Count, global = true)]
     pub(crate) verbose: u8,
 
-    /// Disables all interactive prompts.
+    /// Accepts all interactive prompts.
     #[arg(short, long, global = true)]
     pub(crate) yes: bool,
 }
@@ -39,12 +43,12 @@ pub struct GlobalOptions {
 
 #[derive(Clone, Debug, Default, Parser, Serialize, Deserialize)]
 pub(crate) struct RoleOptions {
-    /// The name of the roles configuration file.
+    /// The name of the role configuration file.
     #[arg(
-        short = 'C',
-        long = "config-name",
         default_value = "Dotfile",
-        global = true
+        global = true,
+        help_heading = "Configuration",
+        long
     )]
     // pub(crate) config_name: PathBuf,
     pub role_config_name: PathBuf,

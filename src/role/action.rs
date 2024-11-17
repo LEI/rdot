@@ -2,6 +2,7 @@ use std::fmt::Display;
 use std::path::PathBuf;
 
 use color_eyre::Result;
+#[cfg(feature = "json-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -28,7 +29,8 @@ impl Display for Action {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, JsonSchema, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[cfg_attr(feature = "json-schema", derive(JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Role {
     /// The name of the package to install

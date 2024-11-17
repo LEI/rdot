@@ -1,5 +1,6 @@
 use std::env::consts;
 
+#[cfg(feature = "json-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -8,9 +9,10 @@ lazy_static! {
     static ref OS: String = consts::OS.to_string();
 }
 
-#[derive(Clone, Debug, Deserialize, JsonSchema, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[cfg_attr(feature = "json-schema", derive(JsonSchema))]
 /// Lowercase operating system
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")] // or snake_case
 pub(crate) enum Os {
     Darwin,
     Linux,
@@ -19,7 +21,8 @@ pub(crate) enum Os {
 
 pub(crate) type OsArray = Vec<Os>;
 
-#[derive(Clone, Debug, Deserialize, JsonSchema, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[cfg_attr(feature = "json-schema", derive(JsonSchema))]
 #[serde(untagged)]
 pub(crate) enum OsValue {
     // None,

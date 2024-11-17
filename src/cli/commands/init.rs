@@ -4,34 +4,37 @@ use clap::Args;
 use color_eyre::eyre::Result;
 
 use crate::{
-    cli::{commands::Command, GlobalOptions},
+    cli::{options::GlobalOptions, progress::show},
     config::{
-        init::{init_dir, InitDir},
+        init::{init_dir, InitDirOptions},
         Config,
     },
 };
 
+use super::Command;
+
 #[derive(Debug, Default, Args)]
 pub(crate) struct Init {
-    /// Override existing configuration.
+    /// Overrides existing configuration and schema if they exist.
     #[arg(short, long)]
     pub(crate) force: bool,
 }
 
 impl Command for Init {
-    fn run(self, _config: &Config, options: GlobalOptions, output: &mut StdoutLock) -> Result<()> {
-        let file = options.config_file;
+    fn run(self, config: &Config, options: GlobalOptions, output: &mut StdoutLock) -> Result<()> {
         let created = init_dir(
-            &file,
-            InitDir {
+            &options.config_dir,
+            InitDirOptions {
                 confirm: !options.yes,
+                #[cfg(feature = "json-schema")]
                 force: self.force,
                 dry_run: options.dry_run,
             },
-        )?
-        .is_some();
-        if created {
-            writeln!(output, "Created: {}", file.display())?;
+        )?;
+
+        if created.is_some() {
+            show(u64::try_from(1)?, "Created");
+            writeln!(output, "Created: {}", config.path.display())?;
         }
 
         Ok(())

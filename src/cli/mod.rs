@@ -1,7 +1,7 @@
 use std::{
     fs,
-    io::StdoutLock,
-    path::{Path, PathBuf},
+    io::{StdoutLock, Write},
+    path::Path,
 };
 
 use clap::{Parser, Subcommand};
@@ -11,7 +11,7 @@ use color_eyre::{
 };
 
 use crate::{
-    config::{loader::load_toml, Config},
+    config::{expand, init::init_env, loader::load_toml, Config},
     role::action::{Action, Role},
 };
 
@@ -23,10 +23,12 @@ use self::{
 pub mod commands;
 mod options;
 pub(crate) mod output;
+pub(crate) mod progress;
+pub(crate) mod prompt;
 
 /// Rdot
 #[derive(Debug, Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None, rename_all = "kebab-case")]
 pub struct Cli {
     #[command(subcommand)]
     pub(crate) command: Commands,
@@ -37,7 +39,7 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub(crate) enum Commands {
-    /// Create the global configuration file.
+    /// Creates the global configuration and schema file.
     Init(init::Init),
 
     /// Lists the specified roles.
@@ -54,44 +56,62 @@ pub(crate) enum Commands {
 }
 
 impl Cli {
-    /// Load global configuration
+    /// Setup environment, parse command arguments and load configuration.
+    pub fn init() -> Result<(Self, Config)> {
+        init_env();
+
+        let cli = Self::parse();
+        let config = cli.load_config()?;
+
+        Ok((cli, config))
+    }
+
+    /// Load the global configuration.
     pub fn load_config(&self) -> Result<Config> {
-        let config_file = &self.global_options.config_file;
+        let config_file = expand(&self.global_options.config_dir.join("config.toml"))?;
 
         if let Commands::Init(args) = &self.command {
-            if !args.force && PathBuf::from(config_file).exists() {
+            // Configuration file should not exist when running the init command
+            if !args.force && config_file.exists() {
                 return Err(eyre!(
                     "Global config already exists: {}",
                     config_file.display()
                 ));
             }
 
-            return Ok(Config::default());
+            let config = Config {
+                path: config_file,
+                ..Default::default()
+            };
+
+            return Ok(config);
         }
 
-        Config::load(&PathBuf::from(config_file)).wrap_err(format!(
+        let mut config = Config::load(&config_file).wrap_err(format!(
             "Failed to load global config: {}",
             config_file.display()
-        ))
+        ))?;
+
+        config.path = config_file;
+
+        Ok(config)
     }
 }
 
-// FIXME: impl Command for Cli requires global_options
 impl Cli {
     pub fn run(self, config: &Config, stdout: &mut StdoutLock) -> Result<()> {
         if self.global_options.verbose > 0 {
-            println!("CLI: {:#?}", self);
+            debug!("{:#?}", self);
         }
         let options = self.global_options;
+        if options.verbose > 1 {
+            debug!("Loaded global config: {:#?}", config);
+        }
         if options.dry_run {
-            println!("Dry-run");
+            writeln!(stdout, "Dry-run")?;
         }
 
-        // if options.verbose > 1 {
-        //     println!("Loaded global config: {:#?}", config);
-        // }
-
-        // log::debug!("OS: {:?}", config.os);
+        // debug!("OS: {:?}", config.os);
         // let os: Vec<Os> = config.os.into();
 
         // TODO: resolve dependency graph
@@ -132,11 +152,11 @@ fn run_command(
         // Note: this resolves symlinks and uses UNC on Windows
         // https://github.com/rust-lang/rust/issues/42869
         role.path = fs::canonicalize(&role.path)
-            .wrap_err(format!("failed to canonicalize: {}", role.path.display()))?;
+            .wrap_err(format!("Failed to resolve path: {}", role.path.display()))?;
         let file = role.path.join(file_name);
 
-        // println!("Loading role config: {:?}", file);
-        let role_config = load_toml(&file).wrap_err("failed to load role config")?;
+        debug!("Loading role config: {}", file.display());
+        let role_config = load_toml(&file).wrap_err("Failed to load role config")?;
         if verbose > 1 {
             println!("Loaded role config: {:#?}", role_config);
         }

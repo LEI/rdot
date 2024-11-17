@@ -1,76 +1,97 @@
-use std::{env::set_var, fs, path::Path};
+use std::{
+    env::{set_var, var},
+    fs,
+    path::Path,
+};
 
-use color_eyre::eyre::{eyre, Context, Result};
-use dialoguer::Confirm;
+#[cfg(feature = "json-schema")]
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::{Context, Result};
 
-use crate::config::{expand, get_parent_dir, Config, SCHEMA_NAME};
+#[cfg(feature = "json-schema")]
+use crate::config::SCHEMA_NAME;
+use crate::{
+    cli::prompt,
+    config::{expand, Config},
+};
 
 use super::dirs;
 
-/// Setup rdot env.
+/// Setup the global environment variables.
 pub(crate) fn init_env() {
-    let config_dir = dirs::CONFIG.to_path_buf();
-    set_var("RDOT_CONFIG_DIR", config_dir);
+    if var("RDOT_CONFIG_DIR").is_err() {
+        let config_dir = dirs::CONFIG.to_path_buf();
+        set_var("RDOT_CONFIG_DIR", config_dir);
+    }
 }
 
 /// Init dir options.
-pub(crate) struct InitDir {
+// TODO: refactor confirm/force/yes options
+pub(crate) struct InitDirOptions {
+    /// Wether to prompt for confirmation.
     pub(crate) confirm: bool,
+    /// Only print.
     pub(crate) dry_run: bool,
+    /// Overrides schema.
+    #[cfg(feature = "json-schema")]
     pub(crate) force: bool,
 }
 
 /// Setup config directory.
-pub(crate) fn init_dir(config_file: &Path, options: InitDir) -> Result<Option<()>> {
-    init_env();
-    let config_file = expand(config_file)?;
-    let parent_dir = get_parent_dir(&config_file)?;
-    let schema_file = parent_dir.join(SCHEMA_NAME);
+pub(crate) fn init_dir(config_dir: &Path, options: InitDirOptions) -> Result<Option<()>> {
+    let config_file = config_dir.join("config.toml");
+    let config_file = expand(&config_file)?;
+    #[cfg(feature = "json-schema")]
+    let schema_file = config_dir.join(SCHEMA_NAME);
 
-    if !options.force && !parent_dir.exists() {
+    let _new_dir = if !config_dir.exists() {
         if options.confirm
-            && !Confirm::new()
-                .with_prompt(format!("Create directory: {}", parent_dir.display()))
-                .interact()?
+            && !prompt::confirm(format!("Create directory: {}", config_dir.display()))?
         {
             return Ok(None);
         }
 
-        log::debug!("Creating directory: {}", parent_dir.display());
+        debug!("Creating directory: {}", config_dir.display());
         if !options.dry_run {
-            fs::create_dir(&parent_dir)?;
+            fs::create_dir(config_dir)?;
         }
-    } else if !options.force && schema_file.exists() {
-        return Err(eyre!(
-            "Schema file already exists (use --force): {}",
-            schema_file.display()
-        ));
-    }
 
-    if options.confirm
-        && !Confirm::new()
-            .with_prompt(format!("Create schema: {}", schema_file.display()))
-            .interact()?
+        true
+    } else {
+        false
+    };
+
+    #[cfg(feature = "json-schema")]
     {
-        return Ok(None);
+        if _new_dir && !options.force && schema_file.exists() {
+            return Err(eyre!(
+                "Schema file already exists (use --force): {}",
+                schema_file.display()
+            ));
+        }
+
+        if !options.confirm || prompt::confirm(format!("Create schema: {}", schema_file.display()))?
+        {
+            debug!("Writing schema: {}", schema_file.display());
+            let schema_json = Config::get_schema_json()?;
+            if !options.dry_run {
+                fs::write(&schema_file, schema_json)
+                    .wrap_err(format!("Failed to write schema: {}", schema_file.display()))?;
+            }
+        }
     }
 
-    log::debug!("Writing schema: {}", schema_file.display());
-    let schema_json = Config::get_schema_json()?;
-    if !options.dry_run {
-        fs::write(&schema_file, schema_json)
-            .wrap_err(format!("Failed to write schema: {}", schema_file.display()))?;
-    }
-
-    log::debug!("Writing default config: {}", config_file.display());
+    debug!("Writing default config to: {}", config_file.display());
+    #[cfg(feature = "json-schema")]
     let header = format!(
         "#:schema ./{}\n\n# os = []\n",
         schema_file.file_name().unwrap().to_string_lossy()
     );
     let toml = Config::get_default_toml()?;
-    let config_json = format!("{}\n{}", header, toml);
+    #[cfg(feature = "json-schema")]
+    let toml = format!("{}\n{}", header, toml);
     if !options.dry_run {
-        fs::write(&config_file, config_json)
+        fs::write(&config_file, toml)
             .wrap_err(format!("Failed to write config: {}", config_file.display()))?;
     }
 

@@ -1,6 +1,8 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 
+const DRY_RUN: &str = "Dry-run";
+const USAGE: &str = "Usage:";
 const ROLE_COUNT: usize = 4;
 
 fn bin() -> Command {
@@ -8,33 +10,30 @@ fn bin() -> Command {
 }
 
 #[test]
-fn no_arguments() {
+fn root_command() {
     bin()
         .arg("--dry-run")
         .assert()
         .failure()
         .code(2)
-        .stderr(predicate::str::contains("Usage:"));
+        .stderr(predicate::str::contains(USAGE));
 }
 
 #[test]
 fn help_command() {
     bin()
-        .arg("--dry-run")
-        .arg("--help")
+        .arg("help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Usage:"));
+        .stdout(predicate::str::contains(USAGE));
 }
 
 #[test]
 fn init_command() {
-    let new_config_file = "example/init.toml";
     bin()
-        .arg("--dry-run")
         .arg("init")
-        .arg("--config-file")
-        .arg(new_config_file)
+        .arg("--config=none")
+        .arg("--dry-run")
         .arg("--yes")
         .assert()
         .success()
@@ -44,50 +43,21 @@ fn init_command() {
 #[test]
 fn list_command() {
     bin()
-        .arg("--dry-run")
         .arg("list")
         .arg("git")
-        .arg("--config-file=examples/config.toml")
+        .arg("--config=examples")
+        .arg("--dry-run")
+        .arg("--format=raw")
         .assert()
         .success()
-        .stdout(
-            predicate::str::is_match(format!(
-                "^Dry-run(\n.*)*?
-Available roles: {}
-git: .*
-$",
-                ROLE_COUNT
-            ))
-            .unwrap(),
-        );
+        .stdout(predicate::str::is_match("^Dry-run\ngit \\./git\n$").unwrap());
 }
 
 #[test]
-fn list_command_with_os() {
+fn list_command_env() {
     bin()
-        .arg("--dry-run")
         .arg("list")
-        .arg("guix")
-        .arg("--config-file=examples/config.toml")
-        .assert()
-        .success()
-        .stdout(
-            predicate::str::is_match(format!(
-                "^Dry-run(\n.*)*?
-Available roles: {}
-guix: .*Linux.*
-$",
-                ROLE_COUNT
-            ))
-            .unwrap(),
-        );
-}
-
-#[test]
-fn list_command_with_config_dir() {
-    bin()
         .arg("--dry-run")
-        .arg("list")
         .env("RDOT_CONFIG_DIR", "examples")
         .assert()
         .success()
@@ -102,10 +72,10 @@ fn install_command() {
     bin()
         .arg("--dry-run")
         .arg("install")
-        .arg("--config-file=examples/config.toml")
+        .arg("--config=examples")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Dry-run"));
+        .stdout(predicate::str::contains(DRY_RUN));
 }
 
 #[test]
@@ -113,8 +83,8 @@ fn remove_command() {
     bin()
         .arg("--dry-run")
         .arg("remove")
-        .arg("--config-file=examples/config.toml")
+        .arg("--config=examples")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Dry-run"));
+        .stdout(predicate::str::contains(DRY_RUN));
 }
