@@ -88,3 +88,14 @@ fn remove_command() {
         .success()
         .stdout(predicate::str::contains(DRY_RUN));
 }
+
+#[test]
+fn sync_command() {
+    bin()
+        .arg("sync")
+        .arg("--config=examples")
+        .arg("--dry-run")
+        .assert()
+        .success()
+        .stdout(predicate::str::is_match("Dry-run").unwrap());
+}

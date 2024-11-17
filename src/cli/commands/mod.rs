@@ -10,6 +10,7 @@ pub(crate) mod init;
 pub(crate) mod install;
 pub(crate) mod list;
 pub(crate) mod remove;
+pub(crate) mod sync;
 
 /// Describes a CLI command.
 pub trait Command: Sized {

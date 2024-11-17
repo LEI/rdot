@@ -16,7 +16,7 @@ use crate::{
 };
 
 use self::{
-    commands::{init, install, list, remove, Command},
+    commands::{init, install, list, remove, sync, Command},
     options::GlobalOptions,
 };
 
@@ -53,6 +53,10 @@ pub(crate) enum Commands {
     /// Removes the specified roles.
     #[command(aliases = ["r"])]
     Remove(remove::Remove),
+
+    /// Removes the specified roles.
+    #[command(aliases = ["s"])]
+    Sync(sync::Sync),
 }
 
 impl Cli {
@@ -129,6 +133,7 @@ impl Cli {
             Commands::List(args) => args.run(config, options, stdout),
             Commands::Install(args) => args.run(config, options, stdout),
             Commands::Remove(args) => args.run(config, options, stdout),
+            Commands::Sync(args) => args.run(config, options, stdout),
         }
     }
 }
