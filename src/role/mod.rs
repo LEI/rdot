@@ -204,7 +204,8 @@ impl From<&RoleValue> for Role {
     fn from(value: &RoleValue) -> Self {
         match value {
             RoleValue::String(value) => Role {
-                // name: value.to_string(),
+                // FIXME: String to RoleValue with name (use key instead of value)
+                name: value.to_string(),
                 path: PathBuf::from(value),
                 ..Default::default()
             },

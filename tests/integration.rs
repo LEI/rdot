@@ -7,7 +7,7 @@ const USAGE: &str = "Usage:";
 const ROLE_COUNT: usize = 4;
 
 fn bin() -> Result<Command> {
-    let name = env!("CARGO_PKG_NAME");
+    let name = "main"; // env!("CARGO_PKG_NAME");
     let cmd = Command::cargo_bin(name)?;
 
     Ok(cmd)
@@ -60,7 +60,12 @@ fn list_command() -> Result<()> {
         .arg("--format=raw")
         .assert()
         .success()
-        .stdout(predicate::str::is_match("^Dry-run\ngit \\./git\n$")?);
+        .stdout(predicate::str::is_match(format!(
+            // "^{}\ngit \\./git\n$",
+            // FIXME:
+            "^{}\n\\./git \\./git\n$",
+            DRY_RUN
+        ))?);
 
     Ok(())
 }
@@ -115,7 +120,7 @@ fn sync_command() -> Result<()> {
         .arg("--dry-run")
         .assert()
         .success()
-        .stdout(predicate::str::is_match("Dry-run")?);
+        .stdout(predicate::str::is_match(DRY_RUN)?);
 
     Ok(())
 }

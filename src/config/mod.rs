@@ -116,7 +116,8 @@ impl Config {
 
         let find = |arg| {
             if let Some(role) = self.roles.get(arg) {
-                Ok(role.into())
+                // Ok(role.into())
+                Ok(Role::from(role))
             } else {
                 Err(eyre!("Invalid role name in arguments: {}", arg))
             }
