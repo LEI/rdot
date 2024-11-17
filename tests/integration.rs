@@ -7,7 +7,7 @@ const USAGE: &str = "Usage:";
 const ROLE_COUNT: usize = 4;
 
 fn bin() -> Result<Command> {
-    let name = "main"; // env!("CARGO_PKG_NAME");
+    let name = env!("CARGO_PKG_NAME");
     let cmd = Command::cargo_bin(name)?;
 
     Ok(cmd)
